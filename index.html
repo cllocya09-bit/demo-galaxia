@@ -1,0 +1,918 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#000000">
+<title>Galaxia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{width:100%;height:100%;overflow:hidden;background:#000;color:#dfe8ff;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;touch-action:none}
+  canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
+  #carga{position:fixed;inset:0;z-index:20;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;transition:opacity 1s,visibility 1s;letter-spacing:.12em;font-size:.85rem;color:#9fb3e8;text-align:center;padding:20px}
+  #carga.fuera{opacity:0;visibility:hidden}
+  #carga i{width:46px;height:46px;border-radius:50%;border:2px solid rgba(160,180,255,.25);border-top-color:#9fb3ff;animation:gira 1s linear infinite}
+  @keyframes gira{to{transform:rotate(360deg)}}
+  #carga small{opacity:.6;letter-spacing:.06em}
+
+  .panel{position:fixed;z-index:10;background:rgba(8,12,28,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(150,175,255,.22);border-radius:16px;color:#dfe8ff;transition:opacity .4s}
+  #titulo{top:14px;left:14px;padding:10px 14px}
+  #titulo h1{font-size:1rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase}
+  #titulo p{font-size:.72rem;opacity:.7;margin-top:2px}
+  #lectura{top:14px;right:14px;padding:10px 14px;text-align:right;font-size:.72rem;line-height:1.4}
+  #lectura b{display:block;font-size:.95rem;font-weight:600;color:#fff;font-variant-numeric:tabular-nums}
+
+  #controles{left:50%;bottom:14px;transform:translateX(-50%);width:min(600px,calc(100% - 20px));padding:12px 14px 10px;display:flex;flex-direction:column;gap:9px}
+  .fila-zoom{display:flex;align-items:center;gap:10px}
+  .fila-zoom button{flex:0 0 38px;height:38px;border-radius:50%;border:1px solid rgba(160,185,255,.4);background:rgba(120,150,255,.12);color:#fff;font-size:1.3rem;line-height:1;cursor:pointer}
+  .fila-zoom button:active{background:rgba(120,150,255,.35)}
+  input[type=range]{-webkit-appearance:none;appearance:none;flex:1;height:4px;border-radius:4px;background:linear-gradient(90deg,rgba(130,160,255,.25),rgba(190,210,255,.7));outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 0 12px 3px rgba(140,170,255,.8);cursor:pointer}
+  input[type=range]::-moz-range-thumb{width:20px;height:20px;border:0;border-radius:50%;background:#fff;box-shadow:0 0 12px 3px rgba(140,170,255,.8);cursor:pointer}
+  .etq{font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;opacity:.65;white-space:nowrap}
+  .fila-btn{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center}
+  .chip{border:1px solid rgba(160,185,255,.35);background:rgba(120,150,255,.1);color:#dfe8ff;border-radius:20px;padding:6px 12px;font-size:.76rem;cursor:pointer;user-select:none}
+  .chip:hover{background:rgba(120,150,255,.25)}
+  .chip.on{background:rgba(150,175,255,.4);border-color:#b6c6ff;color:#fff}
+  .chip.cam{background:rgba(255,215,140,.16);border-color:rgba(255,220,150,.6);color:#ffeccb}
+  .sep{font-size:.66rem;opacity:.5;letter-spacing:.08em;text-transform:uppercase;margin:0 2px}
+  .ayuda{font-size:.66rem;opacity:.5;text-align:center}
+
+  #frase{position:fixed;z-index:6;pointer-events:none;transform:translate(-50%,0);text-align:center;color:#fff3f8;font-family:'Dancing Script','Segoe Script','Brush Script MT',cursive;font-weight:700;line-height:1.1;text-shadow:0 0 10px rgba(255,140,185,1),0 0 26px rgba(255,100,160,.85),0 0 52px rgba(255,80,140,.55),0 2px 4px rgba(0,0,0,.9);opacity:0;transition:opacity .25s;white-space:nowrap}
+  #frase small{display:block;margin-top:.25em;font-size:.55em;opacity:.85;letter-spacing:.04em}
+  body.limpia .panel, body.limpia #zoomFlot, body.limpia #botonMenu, body.limpia #pista{opacity:0;pointer-events:none}
+  html,body{overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  @media (max-width:560px){#titulo p{display:none}.ayuda{display:none}}
+
+  /* ---------- Versión para celular ---------- */
+  #zoomFlot,#botonMenu,#pista,#cerrarMenu{display:none}
+  body.movil #zoomFlot{display:flex;position:fixed;right:max(12px,env(safe-area-inset-right));top:50%;transform:translateY(-50%);flex-direction:column;gap:12px;z-index:11;transition:opacity .4s}
+  body.movil #zoomFlot button{width:48px;height:48px;border-radius:50%;border:1px solid rgba(170,195,255,.5);background:rgba(10,16,38,.6);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:#fff;font-size:1.6rem;line-height:1;display:flex;align-items:center;justify-content:center}
+  body.movil #zoomFlot button:active{background:rgba(120,150,255,.5)}
+  body.movil #botonMenu{display:flex;position:fixed;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:12;align-items:center;gap:8px;padding:12px 22px;border-radius:30px;border:1px solid rgba(170,195,255,.5);background:rgba(10,16,38,.65);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:#fff;font:600 .85rem system-ui,sans-serif;letter-spacing:.04em;transition:opacity .4s}
+  body.movil #pista{display:block;position:fixed;left:50%;bottom:calc(74px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:9;text-align:center;font-size:.78rem;color:#cfdcff;text-shadow:0 1px 6px #000;white-space:nowrap;transition:opacity 1.2s;pointer-events:none}
+  body.movil #pista small{display:block;opacity:.7;font-size:.7rem;margin-top:2px}
+  body.movil #pista.fuera{opacity:0}
+  body.movil #titulo{top:max(10px,env(safe-area-inset-top));left:10px;padding:8px 11px;border-radius:13px}
+  body.movil #titulo h1{font-size:.78rem}
+  body.movil #lectura{top:max(10px,env(safe-area-inset-top));right:10px;padding:7px 10px;font-size:.6rem;border-radius:13px}
+  body.movil #lectura b{font-size:.78rem}
+  body.movil #controles{left:0;right:0;bottom:0;transform:none;width:100%;max-height:56vh;max-height:56dvh;overflow-y:auto;border-radius:20px 20px 0 0;padding:14px 12px max(14px,env(safe-area-inset-bottom));gap:12px;transition:transform .32s ease;z-index:13}
+  body.movil #controles.cerrado{transform:translateY(110%);pointer-events:none}
+  body.movil #cerrarMenu{display:flex;position:sticky;top:0;align-self:flex-end;margin:-4px 0 -6px;width:34px;height:34px;border-radius:50%;border:1px solid rgba(170,195,255,.4);background:rgba(120,150,255,.15);color:#fff;font-size:1rem;align-items:center;justify-content:center;z-index:2}
+  body.movil .fila-btn{flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;scrollbar-width:none;padding-bottom:2px}
+  body.movil .fila-btn::-webkit-scrollbar{display:none}
+  body.movil .chip{flex:0 0 auto;white-space:nowrap;padding:9px 13px;font-size:.78rem}
+  body.movil .fila-zoom{display:none}
+  body.movil .ayuda{display:none}
+</style>
+</head>
+<body>
+
+<div id="carga"><i></i><span id="cargaTxt">GENERANDO LA GALAXIA…</span><small id="cargaSub"></small></div>
+
+<div class="panel" id="titulo"><h1>Galaxia espiral</h1><p>Arrastra para girar · rueda o pellizco para acercar</p></div>
+<div class="panel" id="lectura">Distancia al centro<b id="lecDist">—</b><span id="lecVista"></span></div>
+<div id="frase"></div>
+
+<div id="zoomFlot"><button id="zMas" aria-label="Acercar">+</button><button id="zMenos" aria-label="Alejar">−</button></div>
+<div id="pista">Arrastra para girar · pellizca para acercar<small>Toca dos veces para ocultar los menús</small></div>
+<button id="botonMenu" aria-label="Abrir controles">☰ Controles</button>
+
+<div class="panel" id="controles">
+  <button id="cerrarMenu" aria-label="Cerrar controles">✕</button>
+  <div class="fila-zoom">
+    <span class="etq">Lejos</span>
+    <button id="bMenos" aria-label="Alejar">−</button>
+    <input id="zoom" type="range" min="0" max="1000" value="300" aria-label="Zoom">
+    <button id="bMas" aria-label="Acercar">+</button>
+    <span class="etq">Cerca</span>
+  </div>
+  <div class="fila-btn">
+    <span class="chip" data-vista="completa">Vista completa</span>
+    <span class="chip" data-vista="inclinada">Inclinada</span>
+    <span class="chip" data-vista="borde">De canto</span>
+    <span class="chip" data-vista="nucleo">Núcleo</span>
+    <span class="chip" data-vista="brazo">Dentro de un brazo</span>
+    <span class="chip" data-vista="corazon">💗 Mi universo</span>
+  </div>
+  <div class="fila-btn">
+    <span class="chip on" id="tGiro">Giro</span>
+    <span class="chip" id="tCamara">Girar cámara</span>
+    <span class="chip on" id="tBrillo">Resplandor</span>
+    <span class="chip on" id="tDestellos">Destellos</span>
+    <span class="chip on" id="tCorazon">Corazón</span>
+    <span class="chip on" id="tFondo">Fondo</span>
+    <span class="chip" id="tLimpia">Ocultar menús (H)</span>
+  </div>
+  <div class="fila-btn">
+    <span class="sep">Calidad</span>
+    <span class="chip" data-calidad="normal">Normal</span>
+    <span class="chip" data-calidad="alta">Alta</span>
+    <span class="chip" data-calidad="ultra">Ultra</span>
+    <span class="chip cam" id="bCaptura">📷 Guardar foto HD</span>
+  </div>
+  <div class="ayuda">Teclas: + / − zoom · 1 a 6 vistas · espacio pausa · H oculta los menús · F foto HD</div>
+</div>
+
+<script type="importmap">
+{ "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+
+/* =========================================================================
+   CALIDAD (se elige abajo en el menú; "Alta" es la normal en computadora)
+   ========================================================================= */
+const MOVIL = Math.min(innerWidth, innerHeight) < 700 || /Android|iPhone|iPad/i.test(navigator.userAgent);
+const MOVIL_UI = MOVIL || matchMedia('(pointer: coarse)').matches;          // pantalla táctil: menú plegable y botones grandes
+document.body.classList.toggle('movil', MOVIL_UI);
+const NIVELES = {
+  normal: { tex: MOVIL?896:1280, disco: 90000,  bulbo: 30000,  halo: 5000,  hii: 800,  polvo: 9000,  luz: 6,  prMin: 1,   prMax: 1.5, msaa: 0, destellos: 700,  frente: 14 },
+  alta:   { tex: 2048,           disco: 300000, bulbo: 80000,  halo: 12000, hii: 2200, polvo: 28000, luz: 9,  prMin: 1.5, prMax: 2,   msaa: 4, destellos: 1800, frente: 26 },
+  ultra:  { tex: 2560,           disco: 650000, bulbo: 130000, halo: 20000, hii: 3500, polvo: 48000, luz: 11, prMin: 2,   prMax: 3,   msaa: 4, destellos: 3500, frente: 40 }
+};
+let nivel = new URLSearchParams(location.search).get('calidad');
+try{ nivel = nivel || localStorage.getItem('galaxia-calidad'); }catch(e){}
+if(!NIVELES[nivel]) nivel = MOVIL_UI ? 'normal' : 'alta';
+const Q = NIVELES[nivel];
+
+const CFG = { radio:100, mitad:112, brazos:4, inclinacion:19, distMin:0.25, distMax:650, velocidadGiro:1.0 };
+
+/* =========================================================================
+   LO ROMÁNTICO (cámbialo a tu gusto para cada cliente)
+   ========================================================================= */
+const ROMANTICO = {
+  activo: true,
+  frase: "Eres el centro de mi universo",
+  firma: "",                              // por ejemplo "— Diego"  (déjalo vacío si no quieres firma)
+  anchoCorazon: 34,                       // tamaño del corazón (1 unidad = 1 000 años luz)
+  galaxias: MOVIL ? 300 : 600,            // cuántas mini-galaxias forman el corazón
+  latido: true
+};
+
+const $ = id => document.getElementById(id);
+const TAU = Math.PI*2;
+
+let _s = 7919331;
+const rnd = () => { _s |= 0; _s = _s + 0x6D2B79F5 | 0; let t = Math.imul(_s ^ _s >>> 15, 1 | _s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+const gauss = () => { let u = 0, v = 0; while(!u) u = rnd(); while(!v) v = rnd(); return Math.sqrt(-2*Math.log(u))*Math.cos(TAU*v); };
+
+/* ---- Ruido de valor (grumos, filamentos) ---- */
+const PERM = new Uint8Array(512), VALS = new Float32Array(256);
+for(let i=0;i<256;i++){ PERM[i]=i; VALS[i]=rnd(); }
+for(let i=255;i>0;i--){ const j=Math.floor(rnd()*(i+1)); const t=PERM[i]; PERM[i]=PERM[j]; PERM[j]=t; }
+for(let i=0;i<256;i++) PERM[i+256]=PERM[i];
+function vnoise(x,y){
+  const xi=Math.floor(x), yi=Math.floor(y), xf=x-xi, yf=y-yi;
+  const u=xf*xf*(3-2*xf), v=yf*yf*(3-2*yf);
+  const X=xi&255, Y=yi&255;
+  const a=VALS[PERM[X+PERM[Y]]], b=VALS[PERM[X+1+PERM[Y]]], c=VALS[PERM[X+PERM[Y+1]]], d=VALS[PERM[X+1+PERM[Y+1]]];
+  return a+(b-a)*u + (c-a)*v + (a-b-c+d)*u*v;
+}
+function fbm(x,y,oct){ let s=0,a=.5,f=1,n=0; for(let i=0;i<oct;i++){ s+=a*vnoise(x*f,y*f); n+=a; f*=2.03; a*=.5; } return s/n; }
+function ridged(x,y,oct){ let s=0,a=.5,f=1,n=0; for(let i=0;i<oct;i++){ s+=a*(1-Math.abs(2*vnoise(x*f,y*f)-1)); n+=a; f*=2.1; a*=.5; } return s/n; }
+const sstep = (a,b,x)=>{ const t=Math.min(1,Math.max(0,(x-a)/(b-a))); return t*t*(3-2*t); };
+
+const PARADAS = [[0,[1,.45,.27]],[.3,[1,.78,.52]],[.55,[1,.95,.85]],[.78,[.80,.87,1]],[1,[.55,.70,1]]];
+function colorTemp(t){
+  t = Math.min(1, Math.max(0, t));
+  for(let i=1;i<PARADAS.length;i++){
+    if(t <= PARADAS[i][0]){
+      const [t0,a] = PARADAS[i-1], [t1,b] = PARADAS[i], k = (t-t0)/(t1-t0);
+      return [a[0]+(b[0]-a[0])*k, a[1]+(b[1]-a[1])*k, a[2]+(b[2]-a[2])*k];
+    }
+  }
+  return PARADAS[PARADAS.length-1][1];
+}
+
+/* =========================================================================
+   CAMPO DE DENSIDAD (mapa visto desde arriba)
+   L = luz · G = estrellas jóvenes · D = polvo · Y = nudos de formación estelar
+   ========================================================================= */
+const R = CFG.radio, K = CFG.brazos, H = CFG.mitad, W = Q.tex;
+const BRAZO_B = 1/Math.tan(CFG.inclinacion*Math.PI/180);
+const R0 = 5;
+const thetaBrazo = (r, k) => BRAZO_B*Math.log(Math.max(r,R0)/R0) + k*TAU/K;
+
+const campoL = new Float32Array(W*W), campoG = new Float32Array(W*W), campoD = new Float32Array(W*W), campoY = new Float32Array(W*W);
+let maxL = 0, maxY = 0;
+function generarCampo(){
+  const e1 = 112/H;                                      // las frecuencias del ruido no dependen de la resolución
+  for(let j=0;j<W;j++){
+    const z = (j/(W-1)*2-1)*H;
+    for(let i=0;i<W;i++){
+      const x = (i/(W-1)*2-1)*H, idx = j*W+i, r = Math.hypot(x,z);
+      if(r > R*1.08) continue;
+      const wx = fbm(x*0.040+11, z*0.040+3, 3)-0.5, wz = fbm(x*0.040-7, z*0.040+19, 3)-0.5;
+      const x2 = x + 30*wx, z2 = z + 30*wz, r2 = Math.max(Math.hypot(x2,z2), 1.5), th2 = Math.atan2(z2,x2);
+      let u = (th2 - BRAZO_B*Math.log(Math.max(r2,R0)/R0)) * K / TAU;
+      const un = Math.round(u), d = Math.abs(u - un);
+      const kk = ((un % K) + K) % K, peso = (kk % 2 === 0) ? 1.0 : 0.55;
+      const ancho = (4.2 + 0.06*r2) / r2 * K / TAU;
+      const brazo = peso * Math.exp(-d*d/(2*ancho*ancho));
+      const dd = Math.abs((u - un) + 0.115), anchoD = ancho*0.5;
+      const dBrazo = peso * Math.exp(-dd*dd/(2*anchoD*anchoD));
+      /* el cálculo pesado (grumos, filamentos) solo se hace donde hay brazo o polvo */
+      let nube = 0, armC = 0;
+      if(brazo > 0.004){
+        const grumo = fbm(x*0.20+40, z*0.20+9, 5), fino = fbm(x*0.85-3, z*0.85+30, 3);
+        nube = 0.28 + 1.25*sstep(0.30, 0.72, grumo);
+        armC = brazo * nube * (0.7 + 0.6*fino);
+      }
+      const borde = 0.55 + 0.9*fbm(x*0.07+50, z*0.07-33, 4);
+      const radial = Math.exp(-r/23) * (1 - Math.exp(-(r+0.5)/2.5)) * (1 - sstep(34, 100, r + (borde-1)*16));
+      const entre = 0.15 * (0.6 + 0.8*fbm(x*0.12+5, z*0.12-8, 4));
+      const L = radial * (entre + armC * 1.15);
+      campoL[idx] = L; if(L > maxL) maxL = L;
+      campoG[idx] = Math.min(1, armC / (0.18 + armC)) * (1 - 0.65*Math.exp(-r/15));
+      let polvo = 0;
+      if(dBrazo > 0.004){
+        const fil = ridged(x*0.30+5, z*0.30-12, 4), mota = sstep(0.28, 0.75, fbm(x*0.55+13, z*0.55+2, 4));
+        polvo = dBrazo * (0.5 + 0.95*fil) * (0.6 + 0.6*mota) * (0.3 + 0.7*sstep(112, 18, r));
+      }
+      if(r < 26) polvo += 0.22*Math.exp(-Math.pow((r-10)/5.5,2)) * (0.4+0.8*fbm(x*0.4+30, z*0.4+8, 4));
+      campoD[idx] = Math.min(1.5, polvo) * (1 - sstep(88, 108, r));
+      if(brazo*nube > 0.02){
+        const nudo = sstep(0.52, 0.85, fbm(x*0.55+21, z*0.55-4, 4));
+        campoY[idx] = Math.pow(brazo*nube, 1.8) * nudo * sstep(10, 22, r) * (1 - sstep(80, 100, r));
+        if(campoY[idx] > maxY) maxY = campoY[idx];
+      }
+    }
+  }
+}
+function crearTextura(){
+  const datos = new Uint8Array(W*W*4), sL = 1/(maxL*0.95 + 1e-6);
+  for(let k=0;k<W*W;k++){
+    datos[k*4]   = Math.min(255, Math.sqrt(Math.min(1, campoL[k]*sL))*255);
+    datos[k*4+1] = Math.min(255, campoG[k]*255);
+    datos[k*4+2] = Math.min(255, Math.sqrt(campoD[k]/1.5)*255);
+    datos[k*4+3] = Math.min(255, Math.sqrt(campoY[k]/(maxY+1e-6))*255);
+  }
+  const t = new THREE.DataTexture(datos, W, W, THREE.RGBAFormat, THREE.UnsignedByteType);
+  t.magFilter = THREE.LinearFilter; t.minFilter = THREE.LinearMipmapLinearFilter; t.generateMipmaps = true;
+  t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; t.needsUpdate = true; t.anisotropy = 8;
+  return t;
+}
+const muestraCampo = (arr, x, z) => {
+  const i = Math.round((x/H+1)/2*(W-1)), j = Math.round((z/H+1)/2*(W-1));
+  return (i<0||j<0||i>=W||j>=W) ? 0 : arr[j*W+i];
+};
+
+/* =========================================================================
+   ESCENA Y RENDER (HDR + antialiasing + gradación)
+   ========================================================================= */
+const renderer = new THREE.WebGLRenderer({ antialias:false, powerPreference:'high-performance', alpha:false, preserveDrawingBuffer:false });
+const prNativo = devicePixelRatio || 1;
+const prBase = Math.min(Q.prMax, Math.max(Q.prMin, prNativo));
+renderer.setPixelRatio(prBase);
+renderer.setSize(innerWidth, innerHeight);
+renderer.setClearColor(0x000000, 1);
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(48, innerWidth/innerHeight, 0.01, 7000);
+camera.position.set(0, 105, 118);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = 0.07;
+controls.rotateSpeed = 0.55; controls.zoomSpeed = 1.15; controls.panSpeed = 0.6;
+controls.minDistance = CFG.distMin; controls.maxDistance = CFG.distMax;
+controls.autoRotateSpeed = 0.35;
+controls.update();
+
+/* ---- Estrellas (puntos suaves). La rotación diferencial se calcula en la GPU ---- */
+const VERT = `
+  uniform float uTime, uScale, uSpin, uMinPx, uMaxPx, uBright, uSizeMul, uFarK, uBigA, uBigB;
+  attribute vec3 aPolar; attribute vec4 aColor; attribute float aSize;
+  varying vec4 vColor;
+  void main(){
+    float rc = aPolar.x;
+    float th = aPolar.y + uSpin * 6.0 / (rc + 10.0) * uTime;
+    vec3 p = vec3(rc*cos(th), aPolar.z, rc*sin(th));
+    vec4 mv = modelViewMatrix * vec4(p, 1.0);
+    float dist = max(-mv.z, 0.0001);
+    float ws = aSize * uSizeMul;
+    float px = ws * uScale / dist;
+    float a = aColor.a * uBright;
+    a *= 1.0 - smoothstep(uBigA, uBigB, px);
+    if (px < uMinPx) { a *= px / uMinPx; px = uMinPx; }
+    px = min(px, uMaxPx);
+    a *= smoothstep(0.22*ws, uFarK*ws, dist);
+    if (mv.z > 0.0) a = 0.0;
+    gl_PointSize = px;
+    gl_Position = projectionMatrix * mv;
+    vColor = vec4(aColor.rgb, a);
+  }`;
+const FRAG_LUZ = `
+  varying vec4 vColor;
+  void main(){
+    vec2 c = gl_PointCoord - 0.5;
+    float d = dot(c, c) * 4.0;
+    float g = exp(-d * 6.5);
+    float core = exp(-d * 34.0);
+    float al = (g + core * 1.1) * vColor.a;
+    if (al < 0.002) discard;
+    gl_FragColor = vec4(mix(vColor.rgb, vec3(1.0), core * 0.6), al);
+  }`;
+const FRAG_POLVO_PTS = `
+  varying vec4 vColor;
+  void main(){
+    vec2 c = gl_PointCoord - 0.5;
+    float d = dot(c, c) * 4.0;
+    float al = exp(-d * 3.4) * vColor.a;
+    if (al < 0.002) discard;
+    gl_FragColor = vec4(vColor.rgb, al);
+  }`;
+/* destellos de difracción de 6 puntas, como las fotos del telescopio James Webb */
+const FRAG_DESTELLO = `
+  varying vec4 vColor;
+  void main(){
+    vec2 c = (gl_PointCoord - 0.5) * 2.0;
+    float r = length(c);
+    float s = 0.0;
+    for (int i = 0; i < 3; i++){
+      float a = 1.5708 + float(i) * 1.0472;
+      vec2 d = vec2(cos(a), sin(a));
+      float along = abs(dot(c, d)), perp = abs(dot(c, vec2(-d.y, d.x)));
+      s += exp(-perp * 95.0) * exp(-along * 3.2);
+    }
+    s += 0.30 * exp(-abs(c.y) * 80.0) * exp(-abs(c.x) * 6.0);
+    float glow = exp(-r * r * 60.0);
+    float al = (s * 1.0 + glow * 0.9) * vColor.a * (1.0 - smoothstep(0.55, 1.0, r));
+    if (al < 0.002) discard;
+    gl_FragColor = vec4(mix(vColor.rgb, vec3(1.0), 0.55), al);
+  }`;
+const uniformsComunes = {
+  uTime:{value:0}, uScale:{value:1}, uSpin:{value:0.05*CFG.velocidadGiro}, uBright:{value:1}, uSizeMul:{value:1}
+};
+const crearMaterial = (frag, mezcla, minPx, maxPx, farK=1.1, bigA=1e5, bigB=1e6, extra={}) => new THREE.ShaderMaterial({
+  vertexShader: VERT, fragmentShader: frag,
+  uniforms: { ...uniformsComunes, uMinPx:{value:minPx}, uMaxPx:{value:maxPx}, uFarK:{value:farK}, uBigA:{value:bigA}, uBigB:{value:bigB}, ...extra },
+  transparent:true, depthWrite:false, depthTest:false, blending:mezcla
+});
+class Capa {
+  constructor(n){ this.n=n; this.i=0; this.polar=new Float32Array(n*3); this.col=new Float32Array(n*4); this.tam=new Float32Array(n); }
+  xyz(x,y,z,rgb,alpha,size){
+    if(this.i>=this.n) return; const k=this.i++;
+    this.polar[k*3]=Math.hypot(x,z); this.polar[k*3+1]=Math.atan2(z,x); this.polar[k*3+2]=y;
+    this.col[k*4]=rgb[0]; this.col[k*4+1]=rgb[1]; this.col[k*4+2]=rgb[2]; this.col[k*4+3]=alpha; this.tam[k]=size;
+  }
+  puntos(material, orden){
+    const g=new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(this.i*3),3));
+    g.setAttribute('aPolar', new THREE.BufferAttribute(this.polar.subarray(0,this.i*3),3));
+    g.setAttribute('aColor', new THREE.BufferAttribute(this.col.subarray(0,this.i*4),4));
+    g.setAttribute('aSize', new THREE.BufferAttribute(this.tam.subarray(0,this.i),1));
+    g.setDrawRange(0,this.i);
+    const p=new THREE.Points(g,material); p.frustumCulled=false; p.renderOrder=orden; return p;
+  }
+}
+
+/* ---- Luz difusa y polvo: capas horizontales que leen el mapa ---- */
+const PLANO_VERT = `
+  varying vec3 vWorld;
+  void main(){ vec4 w = modelMatrix * vec4(position,1.0); vWorld = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`;
+const RUIDO_GLSL = `
+  float hash(vec2 p){ p = fract(p*vec2(123.34,456.21)); p += dot(p,p+45.32); return fract(p.x*p.y); }
+  float vn(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f);
+    return mix(mix(hash(i),hash(i+vec2(1,0)),f.x), mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x), f.y); }
+  float fbm4(vec2 p){ float s=0.0,a=0.5; for(int i=0;i<4;i++){ s+=a*vn(p); p*=2.03; a*=0.5; } return s/0.9375; }
+  float ridge4(vec2 p){ float s=0.0,a=0.5; for(int i=0;i<4;i++){ s+=a*(1.0-abs(2.0*vn(p)-1.0)); p*=2.07; a*=0.5; } return s/0.9375; }`;
+const PLANO_COMUN = `
+  uniform sampler2D uTex; uniform float uHalf, uTime, uSpin, uBright, uSliceY, uSliceW; uniform vec3 uCam;
+  varying vec3 vWorld;
+  ${RUIDO_GLSL}
+  vec3 base(){
+    vec3 dir = normalize(vWorld - uCam);
+    if (abs(dir.y) < 0.012) return vWorld;
+    float tt = -uCam.y / dir.y;
+    return (tt > 0.0 && tt < 5000.0) ? uCam + dir * tt : vWorld;
+  }
+  vec2 muestra(vec2 xz, out float r){
+    r = length(xz);
+    float ang = uSpin * 6.0 / (r + 10.0) * uTime;
+    float c = cos(-ang), s = sin(-ang);
+    return vec2(c*xz.x - s*xz.y, s*xz.x + c*xz.y);
+  }`;
+const FRAG_LUZ_PLANO = `
+  ${PLANO_COMUN}
+  void main(){
+    vec3 w0 = base();
+    float r; vec2 p = muestra(w0.xz, r);
+    vec2 uv = p/(2.0*uHalf) + 0.5;
+    if (uv.x<0.0||uv.x>1.0||uv.y<0.0||uv.y>1.0) discard;
+    vec4 t = texture2D(uTex, uv);
+    float dcam = distance(w0, uCam);
+    float lod = smoothstep(120.0, 5.0, dcam);
+    float n = 0.50*fbm4(p*1.7) + 0.32*fbm4(p*6.0+7.0) + 0.18*fbm4(p*21.0+3.0);
+    float detalle = mix(1.0, 0.40 + 1.25*n, lod);
+    float disco = exp(-uSliceY*uSliceY/(2.0*0.85*0.85));
+    float L = t.r * t.r * 1.9 * detalle * disco;
+    vec3 viejo = mix(vec3(1.0,0.80,0.56), vec3(0.96,0.93,0.90), smoothstep(6.0,42.0,r));
+    vec3 joven = vec3(0.50,0.66,1.0);
+    vec3 col = L * mix(viejo, joven, clamp(t.g*0.95, 0.0, 1.0));
+    col += vec3(1.0,0.28,0.44) * t.a * t.a * 0.9 * disco * (0.6 + 0.8*detalle);
+    float rb = sqrt(r*r + uSliceY*uSliceY*2.6);
+    float bulbo = min(exp(-7.67*(pow(rb/3.6, 0.25) - 1.0)), 6.0) * 0.045;
+    col += bulbo * vec3(1.0, 0.74, 0.46) * (1.0 - smoothstep(16.0, 34.0, rb));
+    float fade = smoothstep(0.4, 6.0, dcam);
+    float a = uSliceW * uBright * fade;
+    gl_FragColor = vec4(col * a, 1.0);
+  }`;
+const FRAG_POLVO_PLANO = `
+  ${PLANO_COMUN}
+  void main(){
+    vec3 w0 = base();
+    float r; vec2 p = muestra(w0.xz, r);
+    vec2 uv = p/(2.0*uHalf) + 0.5;
+    if (uv.x<0.0||uv.x>1.0||uv.y<0.0||uv.y>1.0) discard;
+    vec4 t = texture2D(uTex, uv);
+    float dcam = distance(w0, uCam);
+    float lod = smoothstep(100.0, 4.0, dcam);
+    float f = 0.55*ridge4(p*1.3+3.0) + 0.30*fbm4(p*4.5) + 0.15*ridge4(p*14.0);
+    float polvo = t.b * t.b * mix(1.0, 0.35 + 1.5*f, lod);
+    float a = clamp(polvo * uSliceW, 0.0, 0.95) * smoothstep(0.6, 8.0, dcam);
+    gl_FragColor = vec4(0.012, 0.006, 0.004, a);
+  }`;
+function crearPlano(frag, aditivo, y, w, tex, orden){
+  const mat = new THREE.ShaderMaterial({
+    vertexShader: PLANO_VERT, fragmentShader: frag,
+    uniforms: { uTex:{value:tex}, uHalf:{value:H}, uTime:uniformsComunes.uTime, uSpin:uniformsComunes.uSpin, uBright:uniformsComunes.uBright,
+                uSliceY:{value:y}, uSliceW:{value:w}, uCam:{value:new THREE.Vector3()} },
+    transparent:true, depthWrite:false, depthTest:false, side:THREE.DoubleSide,
+    blending: aditivo ? THREE.AdditiveBlending : THREE.NormalBlending
+  });
+  const g = new THREE.PlaneGeometry(2*H, 2*H); g.rotateX(-Math.PI/2);
+  const m = new THREE.Mesh(g, mat); m.position.y = y; m.frustumCulled = false; m.renderOrder = orden; return m;
+}
+
+/* =========================================================================
+   ESTRELLAS: se colocan donde hay luz en el mapa
+   ========================================================================= */
+const capas = {};
+function generarEstrellas(){
+  const disco = new Capa(Q.disco), destellos = new Capa(Q.destellos + Q.frente);
+  let intentos = 0;
+  while(disco.i < Q.disco && intentos++ < Q.disco*60){
+    const x = (rnd()*2-1)*R*1.05, z = (rnd()*2-1)*R*1.05, r = Math.hypot(x,z);
+    if(r > R*1.05 || r < 2) continue;
+    const L = muestraCampo(campoL,x,z);
+    if(rnd()*maxL > L) continue;
+    const g = muestraCampo(campoG,x,z);
+    const grosor = 0.35 + 0.0085*r + 1.5*Math.exp(-r/9);
+    const y = gauss()*grosor*0.55;
+    const t = 0.20 + 0.45*rnd() + 0.42*g*Math.pow(rnd(),0.6) - 0.30*Math.exp(-r/16);
+    const brillo = Math.pow(rnd(), 5.5);
+    const col = colorTemp(t), alfa = 0.2+0.8*Math.min(1,brillo*2.2+0.2*rnd()), tam = 0.06+0.46*brillo;
+    disco.xyz(x, y, z, col, alfa, tam);
+    if(brillo > 0.986 && destellos.i < Q.destellos) destellos.xyz(x, y, z, col, 0.55+0.4*rnd(), 0.10+0.25*brillo);
+  }
+  capas.disco = disco;
+
+  const bulbo = new Capa(Q.bulbo), nBarra = Math.floor(Q.bulbo*0.32);
+  for(let i=0;i<Q.bulbo;i++){
+    const u = Math.max(0.0005, rnd());
+    const rr = Math.min(4.8 / Math.sqrt(Math.pow(u,-2/3) - 1), 32);
+    const cosf = rnd()*2-1, sinf = Math.sqrt(1-cosf*cosf), az = rnd()*TAU;
+    let x = rr*sinf*Math.cos(az), z = rr*sinf*Math.sin(az), y = rr*cosf*0.62;
+    if(i < nBarra){ const l=gauss()*8.5, a=gauss()*2.3, ang=0.55; x=l*Math.cos(ang)-a*Math.sin(ang); z=l*Math.sin(ang)+a*Math.cos(ang); y=gauss()*1.5; }
+    const d = Math.hypot(x,y,z), brillo = Math.pow(rnd(),4);
+    bulbo.xyz(x,y,z, colorTemp(0.15+0.22*rnd()-0.05*Math.exp(-d/6)), 0.10+0.40*brillo+0.08*rnd(), 0.05+0.28*brillo);
+  }
+  capas.bulbo = bulbo;
+
+  const halo = new Capa(Q.halo + 30*70);
+  for(let i=0;i<Q.halo;i++){
+    const rr = 12 + 95*Math.pow(rnd(),1.6), cosf=rnd()*2-1, sinf=Math.sqrt(1-cosf*cosf), az=rnd()*TAU;
+    halo.xyz(rr*sinf*Math.cos(az), rr*cosf*0.8, rr*sinf*Math.sin(az), colorTemp(0.12+0.2*rnd()), 0.18+0.4*rnd(), 0.06+0.09*rnd());
+  }
+  for(let c=0;c<30;c++){
+    const rr=15+70*rnd(), cosf=rnd()*2-1, sinf=Math.sqrt(1-cosf*cosf), az=rnd()*TAU;
+    const cx=rr*sinf*Math.cos(az), cy=rr*cosf*0.9, cz=rr*sinf*Math.sin(az);
+    for(let j=0;j<70;j++){ const s=0.9*Math.abs(gauss());
+      halo.xyz(cx+gauss()*s, cy+gauss()*s, cz+gauss()*s, colorTemp(0.2+0.12*rnd()), 0.35+0.5*rnd(), 0.06+0.12*rnd()); }
+  }
+  capas.halo = halo;
+
+  const hii = new Capa(Q.hii*3);
+  const rosas = [[1,.30,.46],[1,.46,.60],[.92,.26,.58],[1,.52,.44]];
+  let n = 0; intentos = 0;
+  while(n < Q.hii && intentos++ < Q.hii*400){
+    const x=(rnd()*2-1)*R, z=(rnd()*2-1)*R, rr=Math.hypot(x,z); if(rr<14||rr>80) continue;
+    const Y = muestraCampo(campoY,x,z);
+    if(rnd()*maxY*0.8 > Y) continue; n++;
+    const c = rosas[Math.floor(rnd()*rosas.length)], y = gauss()*0.45;
+    hii.xyz(x,y,z, c, 0.03+0.06*rnd(), 0.8+2.0*rnd());
+    for(let j=0;j<2;j++) hii.xyz(x+gauss()*0.5, y+gauss()*0.2, z+gauss()*0.5, [.7,.82,1], 0.5+0.5*rnd(), 0.28+0.35*rnd());
+  }
+  capas.hii = hii;
+
+  const polvo = new Capa(Q.polvo);
+  let maxD = 0; for(let k=0;k<W*W;k+=7) if(campoD[k] > maxD) maxD = campoD[k];
+  intentos = 0;
+  while(polvo.i < Q.polvo && intentos++ < Q.polvo*80){
+    const x=(rnd()*2-1)*R*0.95, z=(rnd()*2-1)*R*0.95; if(Math.hypot(x,z) < 4) continue;
+    const D = muestraCampo(campoD,x,z);
+    if(rnd()*maxD > D) continue;
+    const m = 0.8 + 0.4*rnd();
+    polvo.xyz(x, gauss()*0.32, z, [0.016*m,0.008*m,0.005*m], 0.022+0.042*Math.min(1,D/maxD), 2.0+3.4*rnd());
+  }
+  capas.polvo = polvo;
+
+  /* estrellas brillantes de nuestra propia galaxia que quedan "delante" (las de las fotos del Hubble y del Webb) */
+  const frente = new Capa(Q.frente);
+  for(let i=0;i<Q.frente;i++){
+    const cosf=rnd()*2-1, sinf=Math.sqrt(1-cosf*cosf), az=rnd()*TAU, rr=700+900*rnd();
+    frente.xyz(rr*sinf*Math.cos(az), rr*cosf, rr*sinf*Math.sin(az), colorTemp(0.25+0.75*rnd()), 0.55+0.45*rnd(), 3.0+6.0*Math.pow(rnd(),2));
+  }
+  capas.frente = frente; capas.destellos = destellos;
+}
+
+/* =========================================================================
+   CORAZÓN DE MINI-GALAXIAS (siempre mira a la cámara y late)
+   ========================================================================= */
+const VERT_MINIGAL = `
+  uniform float uScale, uPulse, uBright, uMinPx, uMaxPx, uFade;
+  attribute vec3 aPos; attribute vec4 aColor; attribute float aSize; attribute vec2 aGal;
+  varying vec4 vColor; varying vec2 vGal;
+  void main(){
+    vec4 mv = modelViewMatrix * vec4(aPos * uPulse, 1.0);
+    float dist = max(-mv.z, 0.0001);
+    float px = aSize * uPulse * uScale / dist;
+    float a = aColor.a * uBright * uFade;
+    if (px < uMinPx) { a *= px / uMinPx; px = uMinPx; }
+    px = min(px, uMaxPx);
+    if (mv.z > 0.0) a = 0.0;
+    gl_PointSize = px;
+    gl_Position = projectionMatrix * mv;
+    vColor = vec4(aColor.rgb, a); vGal = aGal;
+  }`;
+/* cada punto se dibuja como una pequeña galaxia espiral inclinada, con su núcleo y dos brazos */
+const FRAG_MINIGAL = `
+  varying vec4 vColor; varying vec2 vGal;
+  void main(){
+    vec2 c = (gl_PointCoord - 0.5) * 2.0;
+    float cs = cos(vGal.x), sn = sin(vGal.x);
+    c = vec2(cs*c.x + sn*c.y, -sn*c.x + cs*c.y);
+    c.y /= max(vGal.y, 0.28);
+    float r = length(c);
+    float th = atan(c.y, c.x);
+    float nucleo = exp(-r*r*22.0);
+    float disco = exp(-r*r*3.4);
+    float brazos = 0.5 + 0.5*cos(2.0*(th - 3.4*log(r + 0.08)));
+    float espiral = disco * (0.30 + 0.70*brazos) * smoothstep(0.0, 0.12, r);
+    float borde = 1.0 - smoothstep(0.70, 1.0, length((gl_PointCoord - 0.5) * 2.0));
+    float al = (nucleo * 1.3 + espiral * 0.95) * vColor.a * borde;
+    if (al < 0.003) discard;
+    vec3 col = mix(vColor.rgb, vec3(0.78,0.86,1.0), espiral * 0.28);
+    gl_FragColor = vec4(mix(col, vec3(1.0,0.97,0.9), nucleo * 0.7), al);
+  }`;
+function puntoEnPoligono(x, y, poli){
+  let dentro = false;
+  for(let i=0, j=poli.length-1; i<poli.length; j=i++){
+    const xi=poli[i][0], yi=poli[i][1], xj=poli[j][0], yj=poli[j][1];
+    if(((yi>y)!==(yj>y)) && (x < (xj-xi)*(y-yi)/(yj-yi) + xi)) dentro = !dentro;
+  }
+  return dentro;
+}
+function crearCorazon(){
+  const N = ROMANTICO.galaxias, k = ROMANTICO.anchoCorazon / 32;
+  const curva = t => [16*Math.pow(Math.sin(t),3), 13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t)];
+  const poli = []; for(let i=0;i<240;i++) poli.push(curva(i/240*TAU));
+  const pos = new Float32Array(N*3), col = new Float32Array(N*4), tam = new Float32Array(N), gal = new Float32Array(N*2);
+  const paleta = [[1,.42,.60],[1,.55,.70],[1,.78,.84],[1,.86,.62],[.96,.40,.66],[1,.96,.92]];
+  const nContorno = Math.floor(N*0.58);
+  for(let i=0;i<N;i++){
+    let x, y;
+    if(i < nContorno){                                       // las galaxias del borde dibujan la silueta
+      const t = (i/nContorno)*TAU + (rnd()-0.5)*0.05, p = curva(t), e = (rnd()-0.5)*1.5;
+      x = p[0] + e*Math.sin(t)*0.6; y = p[1] + e*0.5;
+    } else {                                                 // el resto rellena el interior
+      do { x = (rnd()*2-1)*17; y = -18 + rnd()*31; } while(!puntoEnPoligono(x, y, poli));
+    }
+    const c = paleta[Math.floor(rnd()*paleta.length)], borde = i < nContorno;
+    pos[i*3] = x*k; pos[i*3+1] = y*k + 2.5*k; pos[i*3+2] = gauss()*0.5;
+    const b = borde ? 0.75 + 0.25*rnd() : 0.38 + 0.4*rnd();
+    col[i*4] = c[0]; col[i*4+1] = c[1]; col[i*4+2] = c[2]; col[i*4+3] = b;
+    tam[i] = (borde ? 1.2 : 0.9) * (0.7 + 0.9*rnd()) * (ROMANTICO.anchoCorazon/24);
+    gal[i*2] = rnd()*Math.PI; gal[i*2+1] = 0.30 + 0.70*rnd();
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(N*3),3));
+  g.setAttribute('aPos', new THREE.BufferAttribute(pos,3));
+  g.setAttribute('aColor', new THREE.BufferAttribute(col,4));
+  g.setAttribute('aSize', new THREE.BufferAttribute(tam,1));
+  g.setAttribute('aGal', new THREE.BufferAttribute(gal,2));
+  const mat = new THREE.ShaderMaterial({
+    vertexShader: VERT_MINIGAL, fragmentShader: FRAG_MINIGAL,
+    uniforms: { uScale:uniformsComunes.uScale, uPulse:{value:1}, uBright:{value:1}, uMinPx:{value:3.5*Math.min(1.4,prBase)}, uMaxPx:{value:160*prBase}, uFade:{value:1} },
+    transparent:true, depthWrite:false, depthTest:false, blending:THREE.AdditiveBlending
+  });
+  const corazon = new THREE.Points(g, mat); corazon.frustumCulled = false; corazon.renderOrder = 9;
+  /* halo rosado suave detrás del corazón */
+  const halo = new Capa(3);
+  halo.xyz(0.001, 2.5*k, 0, [1,.35,.58], 0.10, ROMANTICO.anchoCorazon*1.5);
+  halo.xyz(0.001, 2.5*k, 0, [1,.62,.74], 0.06, ROMANTICO.anchoCorazon*0.8);
+  const haloObj = halo.puntos(crearMaterial(FRAG_LUZ, THREE.AdditiveBlending, 0, 900*prBase, 1.5, 1e5, 1e6, { uSpin:{value:0} }), 8);
+  return { corazon, haloObj, mat };
+}
+
+/* =========================================================================
+   FONDO (estrellas lejanas y galaxias remotas)
+   ========================================================================= */
+function texturaRedonda(){
+  const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d');
+  const g = x.createRadialGradient(32,32,0,32,32,32);
+  g.addColorStop(0,'rgba(255,255,255,1)'); g.addColorStop(.16,'rgba(255,255,255,.85)'); g.addColorStop(.45,'rgba(255,255,255,.2)'); g.addColorStop(1,'rgba(255,255,255,0)');
+  x.fillStyle = g; x.fillRect(0,0,64,64);
+  return new THREE.CanvasTexture(c);
+}
+function crearFondo(){
+  const redonda = texturaRedonda();
+  const n = Q.frente > 30 ? 26000 : 16000, pos = new Float32Array(n*3), col = new Float32Array(n*3);
+  for(let i=0;i<n;i++){
+    const cosf=rnd()*2-1, sinf=Math.sqrt(1-cosf*cosf), az=rnd()*TAU, rr=3500;
+    pos[i*3]=rr*sinf*Math.cos(az); pos[i*3+1]=rr*cosf; pos[i*3+2]=rr*sinf*Math.sin(az);
+    const c = colorTemp(rnd()), b = 0.20 + 0.80*Math.pow(rnd(),3.4);
+    col[i*3]=c[0]*b; col[i*3+1]=c[1]*b; col[i*3+2]=c[2]*b;
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos,3)); g.setAttribute('color', new THREE.BufferAttribute(col,3));
+  const fondo = new THREE.Points(g, new THREE.PointsMaterial({ size:2.2*Math.min(2,prBase), map:redonda, sizeAttenuation:false, vertexColors:true, transparent:true, opacity:.95, depthWrite:false }));
+  fondo.renderOrder = -2; fondo.frustumCulled = false;
+  /* galaxias remotas: pequeñas elipses tenues con orientación aleatoria */
+  const m = 90, p2 = new Float32Array(m*3), c2 = new Float32Array(m*3);
+  for(let i=0;i<m;i++){
+    const cosf=rnd()*2-1, sinf=Math.sqrt(1-cosf*cosf), az=rnd()*TAU, rr=3300;
+    p2[i*3]=rr*sinf*Math.cos(az); p2[i*3+1]=rr*cosf; p2[i*3+2]=rr*sinf*Math.sin(az);
+    const c = colorTemp(0.3+0.5*rnd()), b = 0.14+0.26*rnd(); c2[i*3]=c[0]*b; c2[i*3+1]=c[1]*b; c2[i*3+2]=c[2]*b;
+  }
+  const g2 = new THREE.BufferGeometry();
+  g2.setAttribute('position', new THREE.BufferAttribute(p2,3)); g2.setAttribute('color', new THREE.BufferAttribute(c2,3));
+  const lej = new THREE.Points(g2, new THREE.PointsMaterial({ size:11*Math.min(2,prBase), map:redonda, sizeAttenuation:false, vertexColors:true, transparent:true, opacity:.5, depthWrite:false, blending:THREE.AdditiveBlending }));
+  lej.renderOrder = -1; lej.frustumCulled = false;
+  const grupo = new THREE.Group(); grupo.add(fondo, lej); return grupo;
+}
+
+/* =========================================================================
+   ARMADO + POST-PROCESO TIPO TELESCOPIO
+   ========================================================================= */
+let composer, bloom, gradPass, fondoGrupo, destellosObj, conBrillo = true, corazonObj = null, corazonVisible = true;
+const bloomBase = MOVIL ? 0.42 : 0.55;
+const matEstrellas = crearMaterial(FRAG_LUZ, THREE.AdditiveBlending, 1.5*Math.min(1.4,prBase), 30*prBase, 1.5);
+const matHII = crearMaterial(FRAG_LUZ, THREE.AdditiveBlending, 0, 150*prBase, 3.6, 70*prBase, 250*prBase);
+const crearMaterialPolvo = () => crearMaterial(FRAG_POLVO_PTS, THREE.NormalBlending, 0, 420*prBase, 3.2, 90*prBase, 330*prBase);
+const matDestello = crearMaterial(FRAG_DESTELLO, THREE.AdditiveBlending, 10*prBase, 150*prBase, 2.0, 120*prBase, 260*prBase, { uSizeMul:{value:20} });
+const matFrente = crearMaterial(FRAG_DESTELLO, THREE.AdditiveBlending, 34*prBase, 230*prBase, 1.2, 260*prBase, 480*prBase, { uSpin:{value:0}, uSizeMul:{value:4.5} });
+
+const GRADO = {
+  uniforms: { tDiffuse:{value:null}, uExposure:{value:1.0}, uTime:{value:0}, uGrano:{value:0.022}, uVineta:{value:0.55}, uRes:{value:new THREE.Vector2(1,1)}, uSat:{value:1.18} },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+  fragmentShader: `
+    uniform sampler2D tDiffuse; uniform float uExposure, uTime, uGrano, uVineta, uSat; uniform vec2 uRes;
+    varying vec2 vUv;
+    float h(vec2 p){ p = fract(p*vec2(443.897,441.423)); p += dot(p,p+19.19); return fract(p.x*p.y); }
+    void main(){
+      vec3 c = max(texture2D(tDiffuse, vUv).rgb, 0.0) * uExposure;
+      /* compresión de altas luces que conserva el color (el núcleo queda dorado, no blanco quemado) */
+      float m = max(c.r, max(c.g, c.b));
+      float mm = 1.0 - exp(-m * 1.12);                                  // curva de película: conserva el degradado hasta valores muy altos
+      c *= mm / max(m, 1e-4);
+      c = mix(c, vec3(mm), smoothstep(0.78, 1.0, mm) * 0.45);           // las luces más fuertes tiran a blanco, como en una foto
+      float lum = dot(c, vec3(0.2126,0.7152,0.0722));
+      c = mix(vec3(lum), c, uSat);                                     // color más profundo
+      c = pow(c, vec3(1.07));                                          // curva de contraste (negros más profundos)
+      vec2 q = vUv - 0.5; c *= 1.0 - uVineta * dot(q,q) * 1.25;       // viñeteado
+      float g = h(vUv*uRes + fract(uTime*0.37)*91.0) - 0.5;
+      c += g * uGrano * (0.35 + 0.65*(1.0-clamp(lum*2.0,0.0,1.0)));     // grano fino de película (más visible en lo oscuro)
+      gl_FragColor = vec4(max(c,0.0), 1.0);
+    }`
+};
+
+let tiempoVida = 0;
+function construir(){
+  generarCampo();
+  const tex = crearTextura();
+  generarEstrellas();
+
+  const ysTabla = { 6:[-3,-1.1,-0.35,0.35,1.1,3], 9:[-3.4,-1.6,-0.8,-0.3,0,0.3,0.8,1.6,3.4], 11:[-3.6,-2,-1.2,-0.7,-0.3,0,0.3,0.7,1.2,2,3.6] };
+  const ys = ysTabla[Q.luz], luz = [];
+  ys.forEach((y,i)=>{
+    const dy = Math.max(0.35, (ys[Math.min(ys.length-1,i+1)] - ys[Math.max(0,i-1)])/2);
+    luz.push(crearPlano(FRAG_LUZ_PLANO, true, y, 0.95*dy, tex, 2));
+  });
+  const polvoPlanos = [-1.1,-0.4,0.4,1.1].map(y => crearPlano(FRAG_POLVO_PLANO, false, y, 0.42, tex, 5));
+
+  destellosObj = capas.destellos.puntos(matDestello, 7);
+  const objetos = [
+    capas.halo.puntos(matEstrellas, 1), ...luz,
+    capas.disco.puntos(matEstrellas, 3), capas.bulbo.puntos(matEstrellas, 4),
+    ...polvoPlanos, capas.polvo.puntos(crearMaterialPolvo(), 5), capas.hii.puntos(matHII, 6),
+    destellosObj, capas.frente.puntos(matFrente, 8)
+  ];
+  objetos.forEach(o => scene.add(o));
+  fondoGrupo = crearFondo(); scene.add(fondoGrupo);
+  if(ROMANTICO.activo){
+    corazonObj = crearCorazon(); scene.add(corazonObj.haloObj, corazonObj.corazon);
+    $('frase').innerHTML = ROMANTICO.frase + (ROMANTICO.firma ? `<small>${ROMANTICO.firma}</small>` : '');
+  } else { $('tCorazon').style.display = 'none'; document.querySelector('[data-vista="corazon"]').style.display = 'none'; }
+
+  /* canal de render en HDR (half float) con antialiasing por hardware */
+  const w = innerWidth*prBase, h = innerHeight*prBase;
+  const rt = new THREE.WebGLRenderTarget(w, h, { type: THREE.HalfFloatType, samples: Q.msaa, depthBuffer:false });
+  composer = new EffectComposer(renderer, rt);
+  composer.setPixelRatio(prBase); composer.setSize(innerWidth, innerHeight);
+  composer.addPass(new RenderPass(scene, camera));
+  bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), bloomBase, 0.55, 0.25);
+  composer.addPass(bloom);
+  gradPass = new ShaderPass(GRADO);
+  composer.addPass(gradPass);
+  window.__planos = [...luz, ...polvoPlanos];
+  return objetos;
+}
+function dimensiones(){
+  const w = innerWidth, h = innerHeight, pr = renderer.getPixelRatio();
+  renderer.setSize(w,h); if(composer){ composer.setPixelRatio(pr); composer.setSize(w,h); }
+  const asp = w/h;
+  camera.fov = asp < 1 ? Math.min(75, 48/Math.pow(Math.max(asp,0.4),0.7)) : 48;      // en vertical, ángulo más abierto
+  camera.aspect = asp; camera.updateProjectionMatrix();
+  uniformsComunes.uScale.value = (h*pr) / (2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2)));
+  if(gradPass) gradPass.uniforms.uRes.value.set(w*pr, h*pr);
+}
+addEventListener('resize', dimensiones);
+
+/* ---- Zoom ---- */
+const slider = $('zoom'); let ajustando = false;
+const distDeSlider = v => CFG.distMax * Math.pow(CFG.distMin/CFG.distMax, v/1000);
+const sliderDeDist = d => 1000*Math.log(d/CFG.distMax)/Math.log(CFG.distMin/CFG.distMax);
+function ponerDistancia(d){
+  d = Math.min(CFG.distMax, Math.max(CFG.distMin, d));
+  const dir = camera.position.clone().sub(controls.target).normalize();
+  camera.position.copy(controls.target).addScaledVector(dir, d);
+}
+slider.addEventListener('input', () => { if(!ajustando) ponerDistancia(distDeSlider(+slider.value)); });
+$('bMas').onclick = () => ponerDistancia(camera.position.distanceTo(controls.target)*0.72);
+$('bMenos').onclick = () => ponerDistancia(camera.position.distanceTo(controls.target)/0.72);
+$('zMas').onclick = () => $('bMas').click();
+$('zMenos').onclick = () => $('bMenos').click();
+
+/* ---- Menú plegable (celular) ---- */
+const panelCtl = $('controles');
+if(MOVIL_UI) panelCtl.classList.add('cerrado');
+$('botonMenu').onclick = () => panelCtl.classList.remove('cerrado');
+$('cerrarMenu').onclick = () => panelCtl.classList.add('cerrado');
+setTimeout(() => $('pista').classList.add('fuera'), 7000);
+addEventListener('contextmenu', e => e.preventDefault());
+/* doble toque sobre la galaxia: oculta o muestra los menús */
+{ let abajo = null, ultimo = 0;
+  renderer.domElement.addEventListener('pointerdown', e => { abajo = { x:e.clientX, y:e.clientY, t:performance.now() }; });
+  renderer.domElement.addEventListener('pointerup', e => {
+    if(!abajo) return; const ahora = performance.now(), mov = Math.hypot(e.clientX-abajo.x, e.clientY-abajo.y);
+    if(mov < 10 && ahora-abajo.t < 280){ if(ahora-ultimo < 380){ $('tLimpia').click(); ultimo = 0; } else ultimo = ahora; }
+    abajo = null;
+  });
+}
+
+/* ---- Vuelos suaves ---- */
+let vuelo = null;
+function volarA(pos, target, ms=2200){ vuelo = { t0: performance.now(), ms, p0: camera.position.clone(), t0v: controls.target.clone(), p1: pos.clone(), t1: target.clone() }; }
+const easing = x => x<.5 ? 4*x*x*x : 1 - Math.pow(-2*x+2,3)/2;
+const armaPunto = (r,k) => { const th=thetaBrazo(r,k); return new THREE.Vector3(r*Math.cos(th),0,r*Math.sin(th)); };
+const V0 = new THREE.Vector3(0,0,0);
+/* en pantallas verticales (celular) la cámara se aleja más para que la galaxia quepa a lo ancho */
+const ajuste = () => { const a = innerWidth/innerHeight; return a < 1 ? Math.min(2.1, 0.92/Math.max(a,0.4)) : 1; };
+const V = (x,y,z,k=1) => new THREE.Vector3(x,y,z).multiplyScalar(k);
+const VISTAS = {
+  completa:  () => volarA(V(0,185,20,ajuste()), V0, 2600),
+  inclinada: () => volarA(V(0,105,118,ajuste()), V0, 2600),
+  borde:     () => volarA(V(0,12,185,ajuste()), V0, 2600),
+  nucleo:    () => volarA(V(2,5.5,9,Math.min(1.6,ajuste())), V0, 2600),
+  brazo:     () => { const p = armaPunto(48,0); volarA(p.clone().add(V(0,5,11,Math.min(1.6,ajuste()))), p, 2600); },
+  corazon:   () => volarA(V(0,16,92,ajuste()), V0, 2800)
+};
+document.querySelectorAll('[data-vista]').forEach(b => b.onclick = () => VISTAS[b.dataset.vista]());
+
+/* ---- Calidad (recarga la página con el nivel elegido) ---- */
+document.querySelectorAll('[data-calidad]').forEach(b => {
+  b.classList.toggle('on', b.dataset.calidad === nivel);
+  b.onclick = () => { try{ localStorage.setItem('galaxia-calidad', b.dataset.calidad); }catch(e){} const u = new URL(location.href); u.searchParams.delete('calidad'); location.href = u.toString(); };
+});
+
+let girando = true;
+const alternar = (id, fn) => { const el=$(id); el.onclick = () => { el.classList.toggle('on'); fn(el.classList.contains('on')); }; };
+alternar('tGiro', on => { girando = on; });
+alternar('tCamara', on => { controls.autoRotate = on; });
+alternar('tBrillo', on => { conBrillo = on; });
+alternar('tDestellos', on => { destellosObj.visible = on; matFrente.visible = on; });
+alternar('tFondo', on => { fondoGrupo.visible = on; });
+alternar('tCorazon', on => { corazonVisible = on; });
+alternar('tLimpia', on => { document.body.classList.toggle('limpia', on); });
+
+/* ---- Foto en alta definición (hasta ~4K) ---- */
+async function capturar(){
+  const boton = $('bCaptura'), prev = renderer.getPixelRatio();
+  boton.textContent = 'Generando…';
+  try{
+    const objetivo = Math.min(MOVIL_UI ? 2600 : 3840, renderer.capabilities.maxTextureSize, 4096);   // lado mayor de la foto, en píxeles
+    const pr = Math.min(objetivo / Math.max(innerWidth, innerHeight), 5);
+    renderer.setPixelRatio(pr); dimensiones();
+    cuadro(performance.now(), true);
+    const blob = await new Promise(ok => renderer.domElement.toBlob(ok, 'image/png'));
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = `galaxia-${Math.round(innerWidth*pr)}px.png`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+    boton.textContent = '✔ Foto guardada';
+  }catch(e){ boton.textContent = 'No se pudo (prueba con Calidad Normal)'; }
+  renderer.setPixelRatio(prev); dimensiones();
+  setTimeout(()=>{ boton.textContent = '📷 Guardar foto HD'; }, 2500);
+}
+$('bCaptura').onclick = capturar;
+
+addEventListener('keydown', e => {
+  if(e.key==='+'||e.key==='=') $('bMas').click(); else if(e.key==='-'||e.key==='_') $('bMenos').click();
+  else if(e.key==='1') VISTAS.completa(); else if(e.key==='2') VISTAS.inclinada(); else if(e.key==='3') VISTAS.borde();
+  else if(e.key==='4') VISTAS.nucleo(); else if(e.key==='5') VISTAS.brazo(); else if(e.key==='6'||e.key==='7') VISTAS.corazon();
+  else if(e.key==='h'||e.key==='H') $('tLimpia').click(); else if(e.key==='f'||e.key==='F') capturar();
+  else if(e.code==='Space'){ e.preventDefault(); $('tGiro').click(); }
+});
+
+/* =========================================================================
+   BUCLE
+   ========================================================================= */
+let tGalaxia = 0, tPrev = performance.now(), listo = false;
+const v3 = new THREE.Vector3(), nf = new Intl.NumberFormat('es');
+const describir = d => d>400?'Fuera de la galaxia':d>150?'Vista completa':d>45?'Sobre el disco':d>12?'Entre las estrellas':d>2?'Muy cerca':'Dentro de un enjambre estelar';
+function cuadro(now, forzar){
+  if(!listo) return;
+  const dt = Math.min(0.1, (now - tPrev)/1000); if(!forzar) tPrev = now;
+  if(girando && !forzar){ tGalaxia += dt; uniformsComunes.uTime.value = tGalaxia; }
+  tiempoVida += dt; gradPass.uniforms.uTime.value = tiempoVida;
+  if(vuelo && !forzar){
+    const k = Math.min(1,(now-vuelo.t0)/vuelo.ms), e = easing(k);
+    camera.position.lerpVectors(vuelo.p0, vuelo.p1, e); controls.target.lerpVectors(vuelo.t0v, vuelo.t1, e);
+    if(k>=1) vuelo = null;
+  }
+  controls.update();
+  window.__planos.forEach(p => p.material.uniforms.uCam.value.copy(camera.position));
+
+  const dTarget = camera.position.distanceTo(controls.target);
+  ajustando = true; slider.value = Math.round(sliderDeDist(dTarget)); ajustando = false;
+  const dCentro = camera.position.length();
+  const expo = Math.min(1, Math.max(0.22, Math.pow(dCentro/80, 0.7)));
+  uniformsComunes.uBright.value = expo; bloom.strength = bloomBase * (0.35 + 0.65*expo);
+  gradPass.uniforms.uExposure.value = 1.0 + 0.35*(1-expo);                 // compensa un poco al acercarte al núcleo
+  $('lecDist').textContent = nf.format(Math.round(dCentro*1000)) + ' años luz';
+  $('lecVista').textContent = describir(dCentro);
+
+  /* corazón de mini-galaxias: mira a la cámara, late y muestra la frase debajo */
+  if(corazonObj){
+    corazonObj.corazon.quaternion.copy(camera.quaternion);
+    let pulso = 1;
+    if(ROMANTICO.latido){ const tt = (tiempoVida*0.85) % 1, b = Math.exp(-Math.pow((tt-0.10)/0.05,2)) + 0.65*Math.exp(-Math.pow((tt-0.30)/0.06,2)); pulso = 1 + 0.055*b; }
+    const fade = sstep(2.5, 9, dCentro) * (corazonVisible ? 1 : 0);
+    corazonObj.mat.uniforms.uPulse.value = pulso; corazonObj.mat.uniforms.uFade.value = fade;
+    corazonObj.corazon.visible = corazonObj.haloObj.visible = corazonVisible;
+    const k = ROMANTICO.anchoCorazon/32, fr = $('frase');
+    const abajo = new THREE.Vector3(0, -16.5*k, 0).applyQuaternion(camera.quaternion);
+    const derecha = new THREE.Vector3(ROMANTICO.anchoCorazon/2, 0, 0).applyQuaternion(camera.quaternion);
+    const pA = abajo.clone().project(camera), pC = new THREE.Vector3(0,0,0).project(camera), pD = derecha.clone().project(camera);
+    const anchoPx = Math.abs(pD.x - pC.x) * innerWidth;                      // ancho del corazón en pantalla
+    const visFrase = pA.z < 1 && fade > 0.02;
+    fr.style.opacity = visFrase ? String(Math.min(1, fade)) : '0';
+    if(visFrase){
+      fr.style.left = ((pA.x+1)/2*innerWidth) + 'px'; fr.style.top = ((1-pA.y)/2*innerHeight + 4) + 'px';
+      fr.style.fontSize = Math.max(16, Math.min(64, anchoPx*0.135)) + 'px';
+    }
+  }
+
+
+  if(conBrillo) composer.render(); else renderer.render(scene, camera);
+}
+function bucle(now){ cuadro(now); requestAnimationFrame(bucle); }
+
+/* Arranque */
+$('cargaSub').textContent = `Calidad ${nivel}: ${(Q.disco+Q.bulbo).toLocaleString('es')} estrellas · mapa de ${W}×${W}`;
+setTimeout(() => {
+  const t0 = performance.now();
+  const objetos = construir();
+  dimensiones(); listo = true;
+  camera.position.multiplyScalar(ajuste()); controls.update();            // encuadre inicial (más lejos en pantallas verticales)
+  window.galaxia = { camera, controls, renderer, composer, cuadro, volarA, VISTAS, uniforms:uniformsComunes, bloom, objetos, nivel, prBase,
+    estrellas: Object.values(capas).reduce((a,c)=>a+c.i,0), msGeneracion: Math.round(performance.now()-t0) };
+  requestAnimationFrame(bucle);
+  setTimeout(() => $('carga').classList.add('fuera'), 300);
+}, 80);
+</script>
+</body>
+</html>
