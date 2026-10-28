@@ -67,6 +67,11 @@
   body.movil .chip{flex:0 0 auto;white-space:nowrap;padding:9px 13px;font-size:.78rem}
   body.movil .fila-zoom{display:none}
   body.movil .ayuda{display:none}
+
+  /* ---------- Sin menús: la galaxia se maneja directo con el dedo o el mouse ---------- */
+  #controles, #zoomFlot, #botonMenu, body.movil #controles, body.movil #zoomFlot, body.movil #botonMenu{display:none !important}
+  body #pista, body.movil #pista{display:block !important;position:fixed;left:50%;bottom:calc(26px + env(safe-area-inset-bottom));top:auto;transform:translateX(-50%);z-index:9;text-align:center;font-size:.8rem;color:#cfdcff;text-shadow:0 1px 6px #000;white-space:nowrap;transition:opacity 1.4s;pointer-events:none}
+  body #pista.fuera{opacity:0}
 </style>
 </head>
 <body>
@@ -78,7 +83,7 @@
 <div id="frase"></div>
 
 <div id="zoomFlot"><button id="zMas" aria-label="Acercar">+</button><button id="zMenos" aria-label="Alejar">−</button></div>
-<div id="pista">Arrastra para girar · pellizca para acercar<small>Toca dos veces para ocultar los menús</small></div>
+<div id="pista">Arrastra para girar · pellizca o usa la rueda para acercar</div>
 <button id="botonMenu" aria-label="Abrir controles">☰ Controles</button>
 
 <div class="panel" id="controles">
@@ -288,6 +293,7 @@ camera.position.set(0, 105, 118);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true; controls.dampingFactor = 0.07;
 controls.rotateSpeed = 0.55; controls.zoomSpeed = 1.15; controls.panSpeed = 0.6;
+controls.enablePan = false;                                  // un dedo gira, dos dedos (o la rueda) acercan y alejan; la galaxia siempre queda centrada
 controls.minDistance = CFG.distMin; controls.maxDistance = CFG.distMax;
 controls.autoRotateSpeed = 0.35;
 controls.update();
